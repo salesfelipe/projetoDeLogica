@@ -3,6 +3,22 @@
 */
 open util/ordering [Time]
 
+
+/*
+
+ Sistema de Monitoramento de Pacientes (Cliente - Kaio)
+
+Trata-se de um sistema onde profissionais da saúde monitoram pacientes cadastrados. Este software 
+utiliza a plataforma Linux para o servidor e a plataforma cliente será q	ualquer sistema que tenha acesso
+ a internet com um navegador web. Por meio de uma conexão de rede ethernet, os pacientes se 
+comunicam com o servidor com um nome de usuário e uma senha e registram seus sintomas diários.
+ Para os pacientes se cadastrarem precisam fornecer: Nome completo data de nascimento, e-mail, etc.
+ Cada médico tem uma senha particular para acesso ao software e monitoram 1 a 3 pacientes.
+ O sistema possui 2 gerentes que são os responsáveis por adicionar os médicos e acionar o suporte
+ ( por e-mail, telefone, etc.) caso haja algum erro no sistema.
+
+*/
+
 module AssistenciaHospitalar
 
 -- Plataforma tem que ser linux
@@ -11,7 +27,7 @@ module AssistenciaHospitalar
 -- O sistema vai ter uma linha com o paciente e vai ter que checar se o paciente tem acesso ao servidor
 -- O gerente vai ser um medico, e sao imutaveis
 -- Cada médico pode ter no maximo 3 pacientes
-
+-- O estado do sistema so pode mudar pra com acesso, se anteriormente ele estiver sem acesso
 /**ASSINATURAS*/
 
 /*
@@ -77,6 +93,8 @@ fun pacienteLogado[s:Sistema]: set Paciente{
 */
 
 /**FATOS*/
+
+
 fact fatosPaciente{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
@@ -103,10 +121,7 @@ fact fatosSistemaServidor{
 	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
 	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
-/*
-fact fatosSemAcesso{
-	all st: SemAcesso, s: Sistema | st in s.temAcesso
-}*/
+
 
 fact fatosNome{
 	--Todo nome está vinculado a um aluno
