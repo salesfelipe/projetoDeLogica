@@ -19,7 +19,6 @@ comunicam com o servidor com um nome de usuário e uma senha e registram seus si
 
 module AssistenciaHospitalar
 
--- Plataforma tem que ser linux
 -- Existem varios sistemas
 -- Os sistemas tem que estar conectado a internet ou nao
 -- O sistema vai ter uma linha com o paciente e vai ter que checar se o paciente tem acesso ao servidor
@@ -33,21 +32,21 @@ module AssistenciaHospitalar
 */
 sig Time{}
 
-
 /*
-Servidor é onde vai ficar contido os dados da aplicação, respondendo a requisição dos sistemas
-dos pacientes cadastrados. Este servidor tem que rodar em Linux.
+Servidor é onde vai ficar contido os dados da aplicação (medicos e pacientes que estão cadastrados no sistema), respondendo 
+a requisição dos sistemas dos pacientes cadastrados. Este servidor tem que rodar em Linux. O servidor terá obrigatoriamente
+dois gerentes que, necessariamente, devem ser médicos e serão responsáveis por cadastrar novos médicos e acionar o suporte.
 */
 one sig Servidor{
-	gerente: some Medico,
-	medicoCadastrado: Medico some  -> Time,
-	pacienteCadastrado: set Paciente,
-	sistemaAplicacao: one Linux
+	gerentes: some Medico,
+	medicos:  some Medico,
+	pacientes: set Paciente,
+	plataformaServidor: one Linux
 }
 
 /*
-Vão ser os clientes da nossa aplicação, eles vão ter um sistema que tem quer ser conectado a internet
-para poder se comunicar com o servidor.
+Vão ser os clientes da nossa aplicação, eles vão ter um sistema cliente (em qualquer platarforma) que tenha acesso à internet
+para poder se comunicar com o servidor. Além disso, eles podem estar ou não cadastrados no servidor.
 */
 sig Paciente{
 	data: one DataDeNascimento,
@@ -56,32 +55,43 @@ sig Paciente{
 	emailPaciente: one Email,
 	loginPaciente: one Login,
 	senhaPaciente: one Senha,
-	sistemaPaciente: one Sistema
+	sistemaPaciente: one SistemaCliente,
+	statusCliente:one StatusCadastro
 }
 
 /*
-Além de tratar dos pacientes, três mais precisamente, dois deles vão ficar responsáveis por cadastrar 
-mais médicos ao sistema e chamar o suporte se necessário.
+São os médicos que monitorarão os pacientes cadastrados. Cada médico poderá monitorar de 1 a 3 pacientes. O médico pode 
+estar ou não cadastrado no servidor.
 */
 sig Medico{
 	pacientes: some Paciente,
 	senhaMedico: one Senha,
 	nomeMedico: one Nome,
 	emailMedico: one Email,
-	loginMedico: one Login
+	loginMedico: one Login,
+	statusMedico: one StatusCadastro
 }
 
-sig Sistema{
-	Internet: StatusInternet -> Time
+/*
+Sistema utilizado pelos clientes, que serão os pacientes, para registrar seus sintomas diários. Deverá ser composto por qualquer
+plataforma. Para utilizar o sistema, ele deverá estar conectado à internet.
+*/
+sig SistemaCliente{
+	internet: one StatusInternet,
+	plataforma: one SistemaOperacional
 }
+
+abstract sig StatusCadastro{}
+
+sig Cadastrado, NaoCadastrado extends StatusCadastro{}
 
 abstract sig StatusInternet{}
 
-one sig ComAcesso, SemAcesso extends StatusInternet{}
+sig ComInternet, SemInternet extends StatusInternet{}
 
 sig SistemaOperacional{}
 
-one 	sig Linux extends SistemaOperacional{}
+one	sig Linux extends SistemaOperacional{}
 
 sig Senha{}
 
@@ -97,39 +107,87 @@ sig Sintoma{}
 
 /**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
 
+fun pacientesCadastradosComMedico[m: Medico]: set Paciente{
+	m.pacientes
+}
+
+
+fun pacienteCadastradosNoServidor[s: Servidor]: set Paciente{
+	s.pacientes.statusCliente
+}
+
+
+fun medicosCadastradosNoServidor[s: Servidor]: set Medico{
+	s.medicos
+}
+
+/**PREDICADOS*/
+
+pred loginPacientesDeveSerDiferente[]{
+	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
+}
+
+pred emailPacientesDeveSerDiferente[]{
+	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
+}
+
+pred loginMedicosDeveSerDiferente[]{
+	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
+}
+
+pred emailMedicosDeveSerDiferente[]{
+	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
+}
+
+pred pacienteAutenticado[l: Login, s: Senha]{
+	all p:Paciente | p in Servidor.pacientes and
+   	p.loginPaciente = l and p.senhaPaciente = s
+}
+
+pred acionarSuporte[]{}
+
+pred cadastrarGerente[]{}
+
+pred cadastrarSintoma[]{}
+
+
+pred show[]{}
+
 /**FATOS*/
 
-
 fact fatosPaciente{
-	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
-	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
-	all p1:Paciente |  p1 in Servidor.pacienteCadastrado
-	all p1:Paciente | p1 in Medico.pacientes
+	loginPacientesDeveSerDiferente
+	emailPacientesDeveSerDiferente
+	all p1:Paciente |  p1 in Servidor.pacientes
+	
 }
 
 fact fatosMedico{
 	all m1:Medico | #m1.pacientes < 3
-	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
-	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
+	loginMedicosDeveSerDiferente
+	emailMedicosDeveSerDiferente
+	all m: Medico | m in Servidor.medicos
 }
 
 fact fatosSistemaCliente{
-	all s:Sistema, p:Paciente | s in p.sistemaPaciente
+	all s:SistemaCliente, p:Paciente | s in p.sistemaPaciente
 }
 
 fact fatosSistemaServidor{
     #Servidor = 1
-	all s1:Servidor | #s1.gerente = 2
-	all g1:Medico | g1 in Medico
-	all g1:Medico, g2: Medico - g1 | g1 != g2
+	all s1:Servidor | #s1.gerentes = 2
+	all g1:Servidor.gerentes, g2: Servidor.gerentes - g1 | g1 != g2
 	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
 	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
 
 
 fact fatosNome{
-	--Todo nome está vinculado a um aluno
 	all n:Nome | n in Paciente.nomePaciente + Medico.nomeMedico
+}
+
+fact fatosStatusInternet{
+	all s: SistemaCliente, t: StatusInternet | t in s.internet
 }
 
 fact fatosSenha{
@@ -151,35 +209,5 @@ fact fatosEmail{
 fact fatosSintomas{
 	all si:Sintoma | si in Paciente.sintomas
 }
-
-/**PREDICADOS*/
-
-
-pred pacienteAutenticado[l: Login, s: Senha]{
-	all p:Paciente | p in Servidor.pacienteCadastrado and
-   	p.loginPaciente = l and p.senhaPaciente = s
-}
-
-/*
-pred adicionaPacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
-
-}
-
-pred removePacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
-
-}
-*/
-
-pred adicionarMedico[m: Medico, t, t': Time]{
-	m not in Servidor.~(medicoCadastrado.t)
-	Servidor.~(medicoCadastrado.t') = ~(Servidor.medicoCadastrado.t) + m
-}
-pred acionarSuporte[]{}
-pred cadastrarGerente[]{}
-pred cadastrarPaciente[p: Paciente, l: Login, s: Senha]{}
-pred cadastrarSintoma[]{}
-
-
-pred show[]{}
 
 run show for 5
