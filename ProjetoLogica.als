@@ -41,7 +41,8 @@ one sig Servidor{
 	gerentes: some Medico,
 	medicos:  some Medico,
 	pacientes: set Paciente,
-	plataformaServidor: one Linux
+	plataformaServidor: one Linux,
+	suporte:  Suporte one -> Time
 }
 
 /*
@@ -49,13 +50,13 @@ Vão ser os clientes da nossa aplicação, eles vão ter um sistema cliente (em 
 para poder se comunicar com o servidor. Além disso, eles podem estar ou não cadastrados no servidor.
 */
 sig Paciente{
-	data: one DataDeNascimento,
-	nomePaciente: one Nome,
+	data: lone DataDeNascimento,
+	nomePaciente: lone Nome,
 	sintomas: set Sintoma,
-	emailPaciente: one Email,
-	loginPaciente: one Login,
-	senhaPaciente: one Senha,
-	sistemaPaciente: one SistemaCliente,
+	emailPaciente: lone Email,
+	loginPaciente: lone Login,
+	senhaPaciente: lone Senha,
+	sistemaPaciente: lone SistemaCliente,
 	statusCliente:one StatusCadastro
 }
 
@@ -65,10 +66,10 @@ estar ou não cadastrado no servidor.
 */
 sig Medico{
 	pacientes: some Paciente,
-	senhaMedico: one Senha,
-	nomeMedico: one Nome,
-	emailMedico: one Email,
-	loginMedico: one Login,
+	senhaMedico: lone Senha,
+	nomeMedico: lone Nome,
+	emailMedico: lone Email,
+	loginMedico: lone Login,
 	statusMedico: one StatusCadastro
 }
 
@@ -81,6 +82,14 @@ sig SistemaCliente{
 	plataforma: one SistemaOperacional
 }
 
+sig Suporte{
+	statusDoSuporte: StatusAcionado one  -> Time
+}
+
+abstract sig StatusAcionado{}
+
+sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
+
 abstract sig StatusCadastro{}
 
 sig Cadastrado, NaoCadastrado extends StatusCadastro{}
@@ -89,7 +98,7 @@ abstract sig StatusInternet{}
 
 sig ComInternet, SemInternet extends StatusInternet{}
 
-sig SistemaOperacional{}
+abstract sig SistemaOperacional{}
 
 one	sig Linux extends SistemaOperacional{}
 
@@ -107,66 +116,66 @@ sig Sintoma{}
 
 /**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
 
-fun pacientesCadastradosComMedico[m: Medico]: set Paciente{
-	m.pacientes
+fun pacientesNoServidor[s: Servidor]: set Paciente{
+	s.pacientes
 }
 
-
-fun pacienteCadastradosNoServidor[s: Servidor]: set Paciente{
-	s.pacientes.statusCliente
-}
-
-
-fun medicosCadastradosNoServidor[s: Servidor]: set Medico{
+fun medicosNoServidor[s: Servidor]: set Medico{
 	s.medicos
+}
+
+fun todosOsNomes[p: Paciente, m: Medico]: set Nome{
+	 p.nomePaciente + m.nomeMedico
 }
 
 /**PREDICADOS*/
 
-pred loginPacientesDeveSerDiferente[]{
+pred loginsDevemSerDiferentes[]{
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
-}
-
-pred emailPacientesDeveSerDiferente[]{
-	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
-}
-
-pred loginMedicosDeveSerDiferente[]{
 	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
+	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
 
-pred emailMedicosDeveSerDiferente[]{
+
+
+pred emailsDevemSerDiferentes[]{
+	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
+	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
 }
 
-pred pacienteAutenticado[l: Login, s: Senha]{
-	all p:Paciente | p in Servidor.pacientes and
-   	p.loginPaciente = l and p.senhaPaciente = s
+pred pacientesEMedicosDevemEstarNoServidor[]{
+	all p1:Paciente |  p1 in pacientesNoServidor[Servidor]
+	all m: Medico | m in medicosNoServidor[Servidor]
 }
 
-pred acionarSuporte[]{}
+pred medicoPodeTerPacientes[]{
+	all m: Medico, p: Paciente | ((m.statusMedico = Cadastrado) and (p.statusCliente = Cadastrado)) <=> p in m.pacientes
+}
 
-pred cadastrarGerente[]{}
+pred pacientePodeTerMedicos[]{
+	all m: Medico, p: Paciente | p in m.pacientes  => p.statusCliente = Cadastrado
+}
+
+pred acionaSuporte[t, t' : Time, su: Suporte ]{
+	su.statusDoSuporte.t = SuporteNaoAcionado
+	su.statusDoSuporte.t' = SuporteAcionado
+}
+
+pred cadastrarMedico[]{}
 
 pred cadastrarSintoma[]{}
 
+pred init[t: Time]{
+
+}
 
 pred show[]{}
 
 /**FATOS*/
 
-fact fatosPaciente{
-	loginPacientesDeveSerDiferente
-	emailPacientesDeveSerDiferente
-	all p1:Paciente |  p1 in Servidor.pacientes
-	
-}
-
 fact fatosMedico{
 	all m1:Medico | #m1.pacientes < 3
-	loginMedicosDeveSerDiferente
-	emailMedicosDeveSerDiferente
-	all m: Medico | m in Servidor.medicos
 }
 
 fact fatosSistemaCliente{
@@ -177,17 +186,61 @@ fact fatosSistemaServidor{
     #Servidor = 1
 	all s1:Servidor | #s1.gerentes = 2
 	all g1:Servidor.gerentes, g2: Servidor.gerentes - g1 | g1 != g2
-	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
-	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
+	loginsDevemSerDiferentes
+	emailsDevemSerDiferentes
+	pacientesEMedicosDevemEstarNoServidor
+	medicoPodeTerPacientes
+ 	pacientePodeTerMedicos
 }
 
+fact fatosDosCadastrados{
+	all p: Paciente | p.statusCliente = Cadastrado => #p.loginPaciente = 1
+	all p: Paciente | p.statusCliente = Cadastrado => #p.senhaPaciente = 1
+	all p: Paciente | p.statusCliente = Cadastrado => #p.emailPaciente = 1
+	all p: Paciente | p.statusCliente = Cadastrado => #p.nomePaciente = 1
+	all p: Paciente | p.statusCliente = Cadastrado => #p.data = 1
+	all p: Paciente | p.statusCliente = Cadastrado => #p.sistemaPaciente = 1
+
+	all p: Medico | p.statusMedico = Cadastrado => #p.loginMedico = 1
+	all p: Medico | p.statusMedico = Cadastrado => #p.senhaMedico = 1
+	all p: Medico | p.statusMedico= Cadastrado => #p.emailMedico = 1
+	all p:Medico| p.statusMedico = Cadastrado => #p.nomeMedico= 1
+}
+
+fact fatosDosNaoCadastrados{
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.loginPaciente = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.senhaPaciente = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.emailPaciente = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.nomePaciente = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.data = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.sintomas = 0
+	all p: Paciente | p.statusCliente = NaoCadastrado => #p.sistemaPaciente = 0
+
+	all p: Medico | p.statusMedico = NaoCadastrado => #p.loginMedico = 0
+	all p: Medico | p.statusMedico = NaoCadastrado => #p.senhaMedico = 0
+	all p: Medico | p.statusMedico= NaoCadastrado => #p.emailMedico = 0
+	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
+}
 
 fact fatosNome{
-	all n:Nome | n in Paciente.nomePaciente + Medico.nomeMedico
+	all n:Nome | n in todosOsNomes[Paciente, Medico]
 }
 
+fact fatosSuporte{
+	all su:Suporte, t: Time | su in Servidor.suporte.t
+}
+
+fact fatosStatusSuporte{
+	all su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
+}
+
+
 fact fatosStatusInternet{
-	all s: SistemaCliente, t: StatusInternet | t in s.internet
+	all s: SistemaCliente, st: StatusInternet | st in s.internet
+}
+
+fact fatosStatusCadastro{
+	all p: Paciente, m : Medico, st: StatusCadastro | st in p.statusCliente or st in m.statusMedico
 }
 
 fact fatosSenha{
@@ -209,5 +262,12 @@ fact fatosEmail{
 fact fatosSintomas{
 	all si:Sintoma | si in Paciente.sintomas
 }
-
+/*
+fact traces {
+	init [first]
+	all pre: Time - last | let pos = pre.next |
+	some su: Suporte  |
+	acionaSuporte[pre, pos, su]
+}
+*/
 run show for 5
