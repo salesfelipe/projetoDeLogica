@@ -70,21 +70,23 @@ sig Sintoma{}
 
 /**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
 
+/*
 fun pacienteLogado[s:Sistema]: set Paciente{
 
 }
+*/
 
 /**FATOS*/
 fact fatosPaciente{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
-	all p1:Paciente |  p1 in SistemaDeAssistenciaHospitalar.paciente
+	all p1:Paciente |  p1 in SistemaDeAssistenciaHospitalar.pacienteCadastrado
 	all p1:Paciente | p1 in Medico.pacientes
 }
 
 fact fatosMedico{
 	all m1:Medico | #m1.pacientes < 3
-	all m1:Medico | m1 in SistemaDeAssistenciaHospitalar.medico
+	all m1:Medico | m1 in SistemaDeAssistenciaHospitalar.medicoCadastrado
 	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
 	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
 }
@@ -101,6 +103,10 @@ fact fatosSistemaServidor{
 	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
 	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
+/*
+fact fatosSemAcesso{
+	all st: SemAcesso, s: Sistema | st in s.temAcesso
+}*/
 
 fact fatosNome{
 	--Todo nome está vinculado a um aluno
@@ -128,7 +134,7 @@ fact fatosSintomas{
 }
 
 /**PREDICADOS*/
-
+/*
 pred adicionaPacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
 
 }
@@ -136,9 +142,12 @@ pred adicionaPacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaH
 pred removePacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
 
 }
-
+*/
 pred autenticaPaciente[p: Paciente, l: Login, s: Senha]{
 
 }
+
+
+pred show[]{}
 
 run show for 5
