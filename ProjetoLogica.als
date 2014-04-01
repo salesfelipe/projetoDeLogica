@@ -4,12 +4,10 @@
 open util/ordering [Time]
 
 
-/*
-
- Sistema de Monitoramento de Pacientes (Cliente - Kaio)
+/** Sistema de Monitoramento de Pacientes (Cliente - Kaio)
 
 Trata-se de um sistema onde profissionais da saúde monitoram pacientes cadastrados. Este software 
-utiliza a plataforma Linux para o servidor e a plataforma cliente será q	ualquer sistema que tenha acesso
+utiliza a plataforma Linux para o servidor e a plataforma cliente será qualquer sistema que tenha acesso
  a internet com um navegador web. Por meio de uma conexão de rede ethernet, os pacientes se 
 comunicam com o servidor com um nome de usuário e uma senha e registram seus sintomas diários.
  Para os pacientes se cadastrarem precisam fornecer: Nome completo data de nascimento, e-mail, etc.
@@ -35,13 +33,22 @@ module AssistenciaHospitalar
 */
 sig Time{}
 
-sig SistemaDeAssistenciaHospitalar{
+
+/*
+Servidor é onde vai ficar contido os dados da aplicação, respondendo a requisição dos sistemas
+dos pacientes cadastrados. Este servidor tem que rodar em Linux.
+*/
+one sig Servidor{
 	gerente: some Medico,
-	medicoCadastrado: some Medico,
+	medicoCadastrado: Medico some  -> Time,
 	pacienteCadastrado: set Paciente,
 	sistemaAplicacao: one Linux
 }
 
+/*
+Vão ser os clientes da nossa aplicação, eles vão ter um sistema que tem quer ser conectado a internet
+para poder se comunicar com o servidor.
+*/
 sig Paciente{
 	data: one DataDeNascimento,
 	nomePaciente: one Nome,
@@ -52,17 +59,20 @@ sig Paciente{
 	sistemaPaciente: one Sistema
 }
 
+/*
+Além de tratar dos pacientes, três mais precisamente, dois deles vão ficar responsáveis por cadastrar 
+mais médicos ao sistema e chamar o suporte se necessário.
+*/
 sig Medico{
 	pacientes: some Paciente,
 	senhaMedico: one Senha,
 	nomeMedico: one Nome,
 	emailMedico: one Email,
 	loginMedico: one Login
-	
 }
 
 sig Sistema{
-	temAcesso: StatusInternet -> Time
+	Internet: StatusInternet -> Time
 }
 
 abstract sig StatusInternet{}
@@ -71,7 +81,7 @@ one sig ComAcesso, SemAcesso extends StatusInternet{}
 
 sig SistemaOperacional{}
 
-sig Linux extends SistemaOperacional{}
+one 	sig Linux extends SistemaOperacional{}
 
 sig Senha{}
 
@@ -87,25 +97,18 @@ sig Sintoma{}
 
 /**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
 
-/*
-fun pacienteLogado[s:Sistema]: set Paciente{
-
-}
-*/
-
 /**FATOS*/
 
 
 fact fatosPaciente{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
-	all p1:Paciente |  p1 in SistemaDeAssistenciaHospitalar.pacienteCadastrado
+	all p1:Paciente |  p1 in Servidor.pacienteCadastrado
 	all p1:Paciente | p1 in Medico.pacientes
 }
 
 fact fatosMedico{
 	all m1:Medico | #m1.pacientes < 3
-	all m1:Medico | m1 in SistemaDeAssistenciaHospitalar.medicoCadastrado
 	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
 	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
 }
@@ -115,8 +118,8 @@ fact fatosSistemaCliente{
 }
 
 fact fatosSistemaServidor{
-    #SistemaDeAssistenciaHospitalar = 1
-	all s1:SistemaDeAssistenciaHospitalar | #s1.gerente = 2
+    #Servidor = 1
+	all s1:Servidor | #s1.gerente = 2
 	all g1:Medico | g1 in Medico
 	all g1:Medico, g2: Medico - g1 | g1 != g2
 	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
@@ -150,6 +153,13 @@ fact fatosSintomas{
 }
 
 /**PREDICADOS*/
+
+
+pred pacienteAutenticado[l: Login, s: Senha]{
+	all p:Paciente | p in Servidor.pacienteCadastrado and
+   	p.loginPaciente = l and p.senhaPaciente = s
+}
+
 /*
 pred adicionaPacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
 
@@ -159,9 +169,15 @@ pred removePacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHos
 
 }
 */
-pred autenticaPaciente[p: Paciente, l: Login, s: Senha]{
 
+pred adicionarMedico[m: Medico, t, t': Time]{
+	m not in Servidor.~(medicoCadastrado.t)
+	Servidor.~(medicoCadastrado.t') = ~(Servidor.medicoCadastrado.t) + m
 }
+pred acionarSuporte[]{}
+pred cadastrarGerente[]{}
+pred cadastrarPaciente[p: Paciente, l: Login, s: Senha]{}
+pred cadastrarSintoma[]{}
 
 
 pred show[]{}
