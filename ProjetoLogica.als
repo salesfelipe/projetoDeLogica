@@ -22,7 +22,8 @@ sig Time{}
 sig SistemaDeAssistenciaHospitalar{
 	gerente: some Medico,
 	medicoCadastrado: some Medico,
-	pacienteCadastrado: set Paciente
+	pacienteCadastrado: set Paciente,
+	sistemaAplicacao: one Linux
 }
 
 sig Paciente{
@@ -52,9 +53,9 @@ abstract sig StatusInternet{}
 
 one sig ComAcesso, SemAcesso extends StatusInternet{}
 
-sig Plataforma{}
+sig SistemaOperacional{}
 
-sig Linux extends Plataforma{}
+sig Linux extends SistemaOperacional{}
 
 sig Senha{}
 
