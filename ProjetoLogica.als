@@ -1,17 +1,28 @@
+/*
+*Importando a library ordering. Em seguida, aplicando à assinatura Time.
+*/
 open util/ordering [Time]
 
 module AssistenciaHospitalar
 
--- Plataforma tem que ser linux, predicado para verificar isso, tem que ter uma assinatura de sistema
+-- Plataforma tem que ser linux
+-- Existem varios sistemas
+-- Os sistemas tem que estar conectado a internet ou nao
 -- O sistema vai ter uma linha com o paciente e vai ter que checar se o paciente tem acesso ao servidor
 -- O gerente vai ser um medico, e sao imutaveis
+-- Cada médico pode ter no maximo 3 pacientes
 
+/**ASSINATURAS*/
+
+/*
+*Assinatura para simular tempo
+*/
 sig Time{}
 
 sig SistemaDeAssistenciaHospitalar{
 	gerente: some Medico,
-	medico: some Medico,
-	paciente: set Paciente
+	medicoCadastrado: some Medico,
+	pacienteCadastrado: set Paciente
 }
 
 sig Paciente{
@@ -34,7 +45,7 @@ sig Medico{
 }
 
 sig Sistema{
-	temAcesso: one StatusInternet
+	temAcesso: StatusInternet -> Time
 }
 
 abstract sig StatusInternet{}
@@ -57,8 +68,13 @@ sig DataDeNascimento{}
 
 sig Sintoma{}
 
-///////////////////////////////////////////////////////FATOS///////////////////////////////////////////////////////
+/**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
 
+fun pacienteLogado[s:Sistema]: set Paciente{
+
+}
+
+/**FATOS*/
 fact fatosPaciente{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
@@ -87,7 +103,7 @@ fact fatosSistemaServidor{
 }
 
 fact fatosNome{
-	--Todo nome está vinculada a um aluno
+	--Todo nome está vinculado a um aluno
 	all n:Nome | n in Paciente.nomePaciente + Medico.nomeMedico
 }
 
@@ -110,6 +126,19 @@ fact fatosEmail{
 fact fatosSintomas{
 	all si:Sintoma | si in Paciente.sintomas
 }
-pred show[]{}
+
+/**PREDICADOS*/
+
+pred adicionaPacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
+
+}
+
+pred removePacienteNoCadastro[p:Paciente, g:Gerente, s : SistemaDeAssistenciaHospitalar, t,t': Time]{
+
+}
+
+pred autenticaPaciente[p: Paciente, l: Login, s: Senha]{
+
+}
 
 run show for 5
