@@ -1,82 +1,84 @@
 /*
-*Importando a library ordering. Em seguida, aplicando à assinatura Time.
+*Importando a library ordering. Em seguida, aplicando Ã  assinatura Time.
 */
+
 open util/ordering [Time]
 
+module AssistenciaHospitalar
 
 /** Sistema de Monitoramento de Pacientes (Cliente - Kaio)
 
-Trata-se de um sistema onde profissionais da saúde monitoram pacientes cadastrados. Este software 
-utiliza a plataforma Linux para o servidor e a plataforma cliente será qualquer sistema que tenha acesso
- a internet com um navegador web. Por meio de uma conexão de rede ethernet, os pacientes se 
-comunicam com o servidor com um nome de usuário e uma senha e registram seus sintomas diários.
+Trata-se de um sistema onde profissionais da saÃºde monitoram pacientes cadastrados. Este software 
+utiliza a plataforma Linux para o servidor e a plataforma cliente serÃ¡ qualquer sistema que tenha acesso
+ a internet com um navegador web. Por meio de uma conexÃ£o de rede ethernet, os pacientes se 
+comunicam com o servidor com um nome de usuÃ¡rio e uma senha e registram seus sintomas diÃ¡rios.
  Para os pacientes se cadastrarem precisam fornecer: Nome completo data de nascimento, e-mail, etc.
- Cada médico tem uma senha particular para acesso ao software e monitoram 1 a 3 pacientes.
- O sistema possui 2 gerentes que são os responsáveis por adicionar os médicos e acionar o suporte
+ Cada mÃ©dico tem uma senha particular para acesso ao software e monitoram 1 a 3 pacientes.
+ O sistema possui 2 gerentes que sÃ£o os responsÃ¡veis por adicionar os mÃ©dicos e acionar o suporte
  ( por e-mail, telefone, etc.) caso haja algum erro no sistema.
 
 */
-
-module AssistenciaHospitalar
 
 -- Existem varios sistemas
 -- Os sistemas tem que estar conectado a internet ou nao
 -- O sistema vai ter uma linha com o paciente e vai ter que checar se o paciente tem acesso ao servidor
 -- O gerente vai ser um medico, e sao imutaveis
--- Cada médico pode ter no maximo 3 pacientes
+-- Cada mÃ©dico pode ter no maximo 3 pacientes
 -- O estado do sistema so pode mudar pra com acesso, se anteriormente ele estiver sem acesso
 
-/****************************ASSINATURAS****************************/
+/**ASSINATURAS*/
 
 /*
 *Assinatura para simular tempo
 */
+
 sig Time{}
 
 /*
-Servidor é onde vai ficar contido os dados da aplicação (medicos e pacientes que estão cadastrados no sistema), respondendo 
-a requisição dos sistemas dos pacientes cadastrados. Este servidor tem que rodar em Linux. O servidor terá obrigatoriamente
-dois gerentes que, necessariamente, devem ser médicos e serão responsáveis por cadastrar novos médicos e acionar o suporte.
+O servidor eh onde vai ficar contido os dados da aplicacao (medicos e pacientes que estao cadastrados no sistema), respondendo 
+a requisicao dos sistemas dos pacientes cadastrados. Este servidor tem que rodar em Linux. O servidor terÃ¡ obrigatoriamente
+dois gerentes que, necessariamente, devem ser medicos e serao responsaveis por cadastrar novos medicos e acionar o suporte 
+quando necessario.
 */
 one sig Servidor{
 	gerentes: some Medico,
-	medicos:  some Medico,
-	pacientes: set Paciente,
 	plataformaServidor: one Linux,
-	suporte:  Suporte lone -> Time
+	suporte: one Suporte,
+	pacientesCadastrados: set Paciente,
+	medicos: set Medico
 }
 
 /*
-Vão ser os clientes da nossa aplicação, eles vão ter um sistema cliente (em qualquer platarforma) que tenha acesso à internet
-para poder se comunicar com o servidor. Além disso, eles podem estar ou não cadastrados no servidor.
+Vao ser os clientes da nossa aplicacao. Eles vao ter um sistema cliente (em qualquer platarforma) que tenha acesso a  internet
+para poder se comunicar com o servidor. Alem disso, eles podem estar ou nao cadastrados no servidor dependendo do tempo.
 */
 sig Paciente{
-	data: lone DataDeNascimento,
-	nomePaciente: lone Nome,
-	sintomas: set Sintoma,
-	emailPaciente: lone Email,
-	loginPaciente: lone Login,
-	senhaPaciente: lone Senha,
-	sistemaPaciente: lone SistemaCliente,
-	statusCliente:one StatusCadastro
+	data: one DataDeNascimento,
+	nomePaciente: one Nome,
+	sintomas: Sintoma -> Time,
+	emailPaciente: one Email,
+	loginPaciente: one Login,
+	senhaPaciente: one Senha,
+	sistemaPaciente: one SistemaCliente,
+	statusPaciente: StatusCadastro one -> Time
 }
 
 /*
-São os médicos que monitorarão os pacientes cadastrados. Cada médico poderá monitorar de 1 a 3 pacientes. O médico pode 
-estar ou não cadastrado no servidor.
+Medicos cadastrados devem monitorar de 1 a 3 pacientes e os nao cadastrados devem ter nenhum paciente. O medico podera mudar
+de nao cadastrado para cadastrado dependendo do tempo
 */
 sig Medico{
-	pacientes: some Paciente,
-	senhaMedico: lone Senha,
-	nomeMedico: lone Nome,
-	emailMedico: lone Email,
-	loginMedico: lone Login,
-	statusMedico: one StatusCadastro
+	pacientes: Paciente -> Time,
+	senhaMedico: one Senha,
+	nomeMedico: one Nome,
+	emailMedico: one Email,
+	loginMedico: one Login,
+	statusMedico:  StatusCadastro one -> Time
 }
 
 /*
-Sistema utilizado pelos clientes, que serão os pacientes, para registrar seus sintomas diários. Deverá ser composto por qualquer
-plataforma. Para utilizar o sistema, ele deverá estar conectado à internet.
+Sistema utilizado pelos pacientes, para registrar seus sintomas diarios. Poderao estar em qualquer outra plataforma, incluindo o 
+Linux. Para acessar o servidor, o sistema do paciente devera estar conectado a  internet.
 */
 sig SistemaCliente{
 	internet: one StatusInternet,
@@ -84,52 +86,61 @@ sig SistemaCliente{
 }
 
 /*
-O suporte é acionado exclusivamente pelos gerentes caso haja algum erro no sistema.
+O suporte Ã© acionado exclusivamente pelos gerentes do servidor caso haja algum erro com o mesmo.
 */
-sig Suporte{}
+sig Suporte{
+	statusDoSuporte: StatusAcionado one -> Time
+}
 
-/*
 abstract sig StatusAcionado{}
 
-sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
-*/
+one sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
 
 
 /*
-Status do cadastro dos pacientes e dos médicos, que podem estar ou não cadastrados no servidor.
+Status do cadastro dos pacientes e dos mÃ©dicos, que podem estar ou nÃ£o cadastrados no servidor de acordo com o tempo.
 */
 abstract sig StatusCadastro{}
 
-
 sig Cadastrado, NaoCadastrado extends StatusCadastro{}
+
 /*
-Refere-se ao status da conexão do paciente, que deve estar conectado à Internet para ter acesso ao sistema.
+Refere-se ao status da conexÃ£o do paciente, que precisa estar conectado a Internet para ter acesso ao sistema.
 */
 abstract sig StatusInternet{}
 
 sig ComInternet, SemInternet extends StatusInternet{}
+
 /*
-Refere-se ao Sistema Operacional do Servidor. Para este caso, é necessário que o Servidor seja Linux.
+Refere-se ao Sistema Operacional que qualquer sistema do paciente podera rodar. JÃ¡ o servidor Ã© representado apenas pelo Linux. 
 */
 abstract sig SistemaOperacional{}
 
+// unico SO que Ã© obrigatorio que tenha
 one	sig Linux extends SistemaOperacional{}
+
 /*
-Senha necessária a médicos e pacientes para ter acesso ao sistema
+Senha necessaria a medicos e pacientes para ter acesso ao sistema
 */
 sig Senha{}
+
 /*
-Login dos médicos e pacientes para logar no sistema
+Login dos medicos e pacientes para logar no sistema
 */
 sig Login{}
+
 /*
-e-mail que é necessário para o cadastro de do pacientes
+Nomes dos medicos e pacientes para serem cadastrados
 */
 sig Nome{}	
 
-sig Email{}
 /*
-Data de nascimento que é requirida no momento do cadastro do paciente
+e-mail que eh necessario para o cadastro do pacientes
+*/
+sig Email{}
+
+/*
+Data de nascimento que eh requirida no momento do cadastro do paciente
 */
 sig DataDeNascimento{}
 
@@ -138,166 +149,193 @@ Sintoma que o paciente cadastra no sistema. Exclusivo de pacientes.
 */
 sig Sintoma{}
 
-/****************************FUNÇÕES****************************/
+/**FUNÃÃES UTILITÃRIAS USADAS EM VÃRIAS SEÃÃES DO CÃDIGO*/
 
 /*
- A função retorna o conjunto de pacientes que estão cadastrados no servidor
+ A funcao retorna o conjunto de pacientes total que estao no servidor
 */
 fun pacientesNoServidor[s: Servidor]: set Paciente{
-	s.pacientes
-}
+	s.pacientesCadastrados
+} 
+
 /*
-A função retorna os médicos que estão cadastrados no servidor
+A funcao retorna o conjunto de medicos total que estao no servidor
 */
 fun medicosNoServidor[s: Servidor]: set Medico{
 	s.medicos
 }
+
 /*
-A função retorna os nomes de médicos e pacientes cadastrados no servidor
+A funcao retorna os nomes de medicos e pacientes cadastrados no servidor
 */
 fun todosOsNomes[p: Paciente, m: Medico]: set Nome{
 	 p.nomePaciente + m.nomeMedico
 }
 
-/****************************PREDICADOS****************************/
+/**PREDICADOS*/
 
-pred cadaMedicoTemDe1a3Pacientes[]{
-	all m1:Medico | #m1.pacientes < 3
+/*
+Todo medico so pode se relacionar com pacientes que estao cadastrados e vice e versa
+*/
+pred verificaRelacaoMedicosEPacientesCadastrados[]{
+	all p1:Paciente, m1:Medico, t: Time | p1.statusPaciente.t = Cadastrado => p1 in m1.pacientes.t
+	all p1:Paciente, m1:Medico, t: Time | p1.statusPaciente.t = NaoCadastrado => p1 !in m1.pacientes.t
+	all m1:Medico, t: Time | m1.statusMedico.t = NaoCadastrado => #m1.pacientes = 0
 }
 
+/*
+Todo gerente eh um medico cadastrado
+*/
+pred verificaGerenteCadastrado[]{
+	all m1:Medico, s1:Servidor, t: Time | m1 in s1.gerentes  => m1.statusMedico.t = Cadastrado
+}
+
+/*
+Indica que cada mÃ©dico tem no minÃ­mo 1 paciente e no mÃ¡ximo 3.
+*/
+pred cadaMedicoTemDe1a3Pacientes[]{
+	all m1:Medico | #m1.pacientes < 4
+}
+
+/*
+Todo paciente deve, obrigatoriamente, posssuir um sistema que irÃ¡ se comunicar com o Servidor.
+*/
 pred todoSistemaClienteEstaEmPaciente[]{
 	all s:SistemaCliente, p:Paciente | s in p.sistemaPaciente
 }
 
+/*
+Indica que o sistema tem dois gerentes, os quais sÃ£o mÃ©dicos tambÃ©m. Os gerentes sÃ£o imutÃ¡veis.
+*/
 pred oSistemaTem2GerentesDiferentes[]{
 	all s1:Servidor | #s1.gerentes = 2
 	all g1:Servidor.gerentes, g2: Servidor.gerentes - g1 | g1 != g2
 }
 
+/*
+Este predicado indica que os logins de mÃ©dicos e pacientes devem ser diferentes.
+*/
 pred loginsDevemSerDiferentes[]{
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
 	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
 	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
 
+/*
+Impede que mÃ©dicos e pacientes tenham e-mails iguais.
+*/
 pred emailsDevemSerDiferentes[]{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
 	all m1:Medico, m2:Medico-m1 | m1.emailMedico != m2.emailMedico
 	all m1:Medico, p1:Paciente| m1.emailMedico != p1.emailPaciente
 }
 
+/*
+Os pacientes e medicos estao necessariamente no servidor.
+*/
 pred pacientesEMedicosDevemEstarNoServidor[]{
 	all p1:Paciente |  p1 in pacientesNoServidor[Servidor]
 	all m: Medico | m in medicosNoServidor[Servidor]
 }
 
-pred medicoPodeTerPacientes[]{
-	all m: Medico, p: Paciente | ((m.statusMedico = Cadastrado) and (p.statusCliente = Cadastrado)) <=> p in m.pacientes
-}
-
-pred pacientePodeTerMedicos[]{
-	all m: Medico, p: Paciente | p in m.pacientes  => p.statusCliente = Cadastrado
-}
-
-pred cadastradosPossuemTodosOsDados[]{
-	all p: Paciente | p.statusCliente = Cadastrado => #p.loginPaciente = 1
-	all p: Paciente | p.statusCliente = Cadastrado => #p.senhaPaciente = 1
-	all p: Paciente | p.statusCliente = Cadastrado => #p.emailPaciente = 1
-	all p: Paciente | p.statusCliente = Cadastrado => #p.nomePaciente = 1
-	all p: Paciente | p.statusCliente = Cadastrado => #p.data = 1
-	all p: Paciente | p.statusCliente = Cadastrado => #p.sistemaPaciente = 1
-
-	all p: Medico | p.statusMedico = Cadastrado => #p.loginMedico = 1
-	all p: Medico | p.statusMedico = Cadastrado => #p.senhaMedico = 1
-	all p: Medico | p.statusMedico= Cadastrado => #p.emailMedico = 1
-	all p:Medico| p.statusMedico = Cadastrado => #p.nomeMedico= 1
-}
-
-pred naoCadastradosNaoPossuemTodosOsDados[]{
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.loginPaciente = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.senhaPaciente = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.emailPaciente = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.nomePaciente = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.data = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.sintomas = 0
-	all p: Paciente | p.statusCliente = NaoCadastrado => #p.sistemaPaciente = 0
-
-	all p: Medico | p.statusMedico = NaoCadastrado => #p.loginMedico = 0
-	all p: Medico | p.statusMedico = NaoCadastrado => #p.senhaMedico = 0
-	all p: Medico | p.statusMedico= NaoCadastrado => #p.emailMedico = 0
-	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
-}
-
+/*
+Qualquer dado/informacao pertence a um mÃ©dico ou a um paciente.
+*/
 pred qualquerDadoPertenceAalguem[]{
 	all n:Nome | n in todosOsNomes[Paciente, Medico]
-	all e:Email | e in Paciente.emailPaciente + Medico.emailMedico
 	all l:Login | l in Paciente.loginPaciente + Medico.loginMedico
+	all e:Email | e in Paciente.emailPaciente + Medico.emailMedico
 	all s:Senha | s in Paciente.senhaPaciente + Medico.senhaMedico
 	all d:DataDeNascimento | d in Paciente.data
-	all si:Sintoma | si in Paciente.sintomas
-	all p: Paciente, m : Medico, st: StatusCadastro | st in p.statusCliente or st in m.statusMedico
 }
 
-pred suporteDeveEstarNoServidorESerImutavel []{
-	all t, t2: Time | Servidor.suporte.t = Servidor.suporte.t2
-	//some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
-}
 
-pred oStatusDaInternetDeveEstarDentroDoSistemaCliente[]{
-	all s: SistemaCliente, st: StatusInternet | st in s.internet
-}
+/**2: Predicados que servem ao propÃ³sito de simular o comportamento temporal do sistema*/
+
+
+pred init[t: Time]{}
+
 pred acionaSuporte[t, t' : Time, su: Suporte ]{
 	su.statusDoSuporte.t in SuporteNaoAcionado
 	su.statusDoSuporte.t' = SuporteAcionado
 }
 
-pred cadastrarMedico[t, t' : Time, su: Suporte ]{
-}
-pred cadastrarSintoma[]{}
-
-pred init[t: Time]{
-	#SuporteAcionado = 1
-	#SuporteNaoAcionado = 1
-	#Suporte = 2
+pred cadastrarPaciente[t, t' : Time, p:Paciente, m:Medico ]{
+	p.statusPaciente.t in NaoCadastrado
+	p.statusPaciente.t' = Cadastrado
 }
 
-/****************************FATOS****************************/
-
-fact EspecificacaoDoSistema{
-
-	cadaMedicoTemDe1a3Pacientes
-
-	todoSistemaClienteEstaEmPaciente
-
-	oSistemaTem2GerentesDiferentes
-
-	loginsDevemSerDiferentes
-
-	emailsDevemSerDiferentes
-
-	pacientesEMedicosDevemEstarNoServidor
-
-	medicoPodeTerPacientes
-
- 	pacientePodeTerMedicos
-
-	cadastradosPossuemTodosOsDados
-
-	naoCadastradosNaoPossuemTodosOsDados
-
-	qualquerDadoPertenceAalguem
-
-	suporteDeveEstarNoServidorESerImutavel
-
-	oStatusDaInternetDeveEstarDentroDoSistemaCliente
-
+pred cadastrarMedico[t, t' : Time, m:Medico ]{
+	m.statusMedico.t in NaoCadastrado
+	m.statusMedico.t' = Cadastrado
 }
+
+pred alocaPaciente[t, t' : Time, p: Paciente, m: Medico]{
+	p.statusPaciente.t in Cadastrado
+	p not in Medico.pacientes.t
+	m.pacientes.t' = m.pacientes.t + p
+}
+
+pred cadastrarSintoma[t,t' : Time, p: Paciente, si: Sintoma]{
+	p.statusPaciente.t in Cadastrado
+	si not in p.sintomas.t
+	p.sintomas.t' = p.sintomas.t + si
+}
+
+pred show[]{}
+
+/**FATOS*/
 
 fact traces {
 	init [first]
 	all pre: Time - last | let pos = pre.next |
-	some su: Suporte  |
-	acionaSuporte[pre, pos, su]
+	some  p: Paciente, m: Medico, si: Sintoma, su: Suporte |
+	cadastrarMedico[pre,pos,m] or
+	acionaSuporte[pre, pos, su] or
+	cadastrarPaciente[pre,pos,p,m] or 
+	alocaPaciente[pre,pos,p, m] or 
+	cadastrarSintoma[pre,pos,p, si]
+	
+}
+
+fact EspecificacaoDoSistema{
+	verificaRelacaoMedicosEPacientesCadastrados
+	cadaMedicoTemDe1a3Pacientes
+	oSistemaTem2GerentesDiferentes
+	pacientesEMedicosDevemEstarNoServidor
+	verificaGerenteCadastrado
+	loginsDevemSerDiferentes
+	emailsDevemSerDiferentes
+	todoSistemaClienteEstaEmPaciente
+	qualquerDadoPertenceAalguem	
+}
+
+/* Todos os pacientes dos medicos estao cadastrados */
+fact fatosMedicos{
+	all m: Medico, t: Time| m.pacientes.t.statusPaciente.t in Cadastrado
+}
+
+/* Todos os pacientes cadastrados no servidor, tem que ter o status cadastrado*/
+fact fatosPaciente{
+	all p: Paciente, sv: Servidor, t: Time | p in sv.pacientesCadastrados => p.statusPaciente.t in Cadastrado
+}
+
+/* Todos os sintomas devem pertecer a um paciente e cas o paciente nao seja cadastrado ele nao deve conter sintomas */
+fact fatosSintomas{
+	all p: Paciente, t: Time | p.statusPaciente.t in NaoCadastrado =>  #p.sintomas.t  = 0
+	all si: Sintoma,  p: Paciente, t: Time | si in p.sintomas.t
+}
+
+/* Todos os status de cadastro devem pertencer a um paciente ou medico  */
+fact fatosStatusCadastro{
+	all p: Paciente, m : Medico, st: StatusCadastro, t : Time | st in p.statusPaciente.t or st in m.statusMedico.t
+}
+
+
+/* Todos os satus da internet devem pertencer a um sistema do paciente */
+fact fatosStatusInternet{
+	all s: SistemaCliente, st: StatusInternet | st in s.internet
+	all st: StatusAcionado| st in SuporteAcionado or (st in SuporteNaoAcionado)
 }
 
 /****************************ASSERTS****************************/
@@ -317,11 +355,11 @@ assert servidorPossuiApenas2Gerentes{
 }
 
 /*
-Todo paciente cadastrado contém todos os seus dados de cadastro e não os contém caso contrário?
+Todo paciente cadastrado contÃÂ©m todos os seus dados de cadastro e nÃÂ£o os contÃÂ©m caso contrÃÂ¡rio?
 */
 assert pacienteCadastradoContemTodosOsDados{
-	all p: Paciente |
-	p.statusCliente = Cadastrado
+	all p: Paciente, t : Time |
+	p.statusPaciente.t = Cadastrado
 	implies
 		#p.nomePaciente != 0 and
 		#p.loginPaciente != 0 and
@@ -330,8 +368,8 @@ assert pacienteCadastradoContemTodosOsDados{
 		#p.senhaPaciente != 0 and
 		#p.sistemaPaciente != 0 and
 	
-	all p: Paciente |
-	p.statusCliente = NaoCadastrado
+	all p: Paciente, t: Time |
+	p.statusPaciente.t = NaoCadastrado
 	implies
 		#p.nomePaciente = 0 and
 		#p.loginPaciente = 0 and
@@ -343,17 +381,17 @@ assert pacienteCadastradoContemTodosOsDados{
 }
 
 /*
-Todo médico cadastrado contém todos os seus dados de cadastro e não os contém caso contrário?
+Todo mÃÂ©dico cadastrado contÃÂ©m todos os seus dados de cadastro e nÃÂ£o os contÃÂ©m caso contrÃÂ¡rio?
 */
 assert medicoCadastradoContemTodosOsDados{
-	all m: Medico | m.statusMedico = Cadastrado
+	all m: Medico, t: Time | m.statusMedico.t = Cadastrado
 		implies
 			#m.nomeMedico != 0 and
 			#m.loginMedico != 0 and
 			#m.emailMedico != 0 and
 			#m.senhaMedico != 0
 	
-	all m: Medico | m.statusMedico = NaoCadastrado
+	all m: Medico, t: Time | m.statusMedico.t = NaoCadastrado
 		implies
 			#m.nomeMedico = 0 and
 			#m.loginMedico = 0 and
@@ -381,12 +419,11 @@ assert servidorPossuiApenas1Suporte{
 }
 
 /*
-A plataforma utilizada pelo sistema é Linux?
+A plataforma utilizada pelo sistema ÃÂ© Linux?
 */
 assert plataformaDoServidorDeveSerLinux{
 	all s: Servidor | s.plataformaServidor = Linux
 }
 
-/**RUN */
-pred show[]{}
-run show for 5
+
+run show for 10
