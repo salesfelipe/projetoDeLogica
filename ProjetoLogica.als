@@ -213,7 +213,12 @@ pred cadastrarMedico[]{}
 
 pred cadastrarSintoma[]{}
 
-pred init[t: Time]{}
+pred init[t: Time]{
+	#SuporteAcionado = 1
+	#SuporteNaoAcionado = 1
+	#Suporte = 2
+
+}
 
 pred show[]{}
 
@@ -241,13 +246,13 @@ fact fatosNome{
 //	all n:Nome | n in todosOsNomes[Paciente, Medico]
 }
 
-fact fatosSuporte{
-//	all su:Suporte, t: Time | su in Servidor.suporte.t
+fact fatosSuporteDoSistemaImutavel{
+	all t, t2: Time | Servidor.suporte.t = Servidor.suporte.t2
 }
 
 
 fact fatosStatusSuporte{
-	some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
+	//some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
 }
 
 fact fatosStatusInternet{
@@ -286,4 +291,4 @@ fact traces {
 }
 
 
-run show for 10
+run show for 5
