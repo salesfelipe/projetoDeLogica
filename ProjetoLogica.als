@@ -204,12 +204,9 @@ pred acionaSuporte[t, t' : Time, su: Suporte ]{
 	su.statusDoSuporte.t' = SuporteAcionado
 }
 
-pred removeSuporte[t, t' : Time, su: Suporte, se: Servidor ]{
-	se.suporte.t = su
-	no se.suporte.t'
-}
+pred cadastrarMedico[t, t' : Time, su: Suporte ]{
 
-pred cadastrarMedico[]{}
+}
 
 pred cadastrarSintoma[]{}
 
@@ -217,7 +214,6 @@ pred init[t: Time]{
 	#SuporteAcionado = 1
 	#SuporteNaoAcionado = 1
 	#Suporte = 2
-
 }
 
 pred show[]{}
@@ -243,16 +239,15 @@ fact EspecificacaoDoSistema{
 }
 
 fact fatosNome{
-//	all n:Nome | n in todosOsNomes[Paciente, Medico]
+	all n:Nome | n in todosOsNomes[Paciente, Medico]
 }
 
 fact fatosSuporteDoSistemaImutavel{
 	all t, t2: Time | Servidor.suporte.t = Servidor.suporte.t2
 }
 
-
 fact fatosStatusSuporte{
-	//some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
+	some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
 }
 
 fact fatosStatusInternet{
