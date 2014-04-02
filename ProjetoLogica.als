@@ -42,7 +42,7 @@ one sig Servidor{
 	medicos:  some Medico,
 	pacientes: set Paciente,
 	plataformaServidor: one Linux,
-	suporte:  Suporte one -> Time
+	suporte:  Suporte lone -> Time
 }
 
 /*
@@ -82,14 +82,12 @@ sig SistemaCliente{
 	plataforma: one SistemaOperacional
 }
 
-sig Suporte{
-	statusDoSuporte: StatusAcionado one  -> Time
-}
-
+sig Suporte{}
+/*
 abstract sig StatusAcionado{}
 
 sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
-
+*/
 abstract sig StatusCadastro{}
 
 sig Cadastrado, NaoCadastrado extends StatusCadastro{}
@@ -130,13 +128,24 @@ fun todosOsNomes[p: Paciente, m: Medico]: set Nome{
 
 /**PREDICADOS*/
 
+pred cadaMedicoTemDe1a3Pacientes[]{
+	all m1:Medico | #m1.pacientes < 3
+}
+
+pred todoSistemaClienteEstaEmPaciente[]{
+	all s:SistemaCliente, p:Paciente | s in p.sistemaPaciente
+}
+
+pred oSistemaTem2GerentesDiferentes[]{
+	all s1:Servidor | #s1.gerentes = 2
+	all g1:Servidor.gerentes, g2: Servidor.gerentes - g1 | g1 != g2
+}
+
 pred loginsDevemSerDiferentes[]{
 	all p1:Paciente, p2:Paciente-p1 | p1.loginPaciente != p2.loginPaciente
 	all m1:Medico, m2:Medico-m1 | m1.loginMedico != m2.loginMedico
 	all m1:Medico, p1:Paciente| m1.loginMedico != p1.loginPaciente
 }
-
-
 
 pred emailsDevemSerDiferentes[]{
 	all p1:Paciente, p2:Paciente-p1 | p1.emailPaciente != p2.emailPaciente
@@ -157,43 +166,7 @@ pred pacientePodeTerMedicos[]{
 	all m: Medico, p: Paciente | p in m.pacientes  => p.statusCliente = Cadastrado
 }
 
-pred acionaSuporte[t, t' : Time, su: Suporte ]{
-	su.statusDoSuporte.t = SuporteNaoAcionado
-	su.statusDoSuporte.t' = SuporteAcionado
-}
-
-pred cadastrarMedico[]{}
-
-pred cadastrarSintoma[]{}
-
-pred init[t: Time]{
-
-}
-
-pred show[]{}
-
-/**FATOS*/
-
-fact fatosMedico{
-	all m1:Medico | #m1.pacientes < 3
-}
-
-fact fatosSistemaCliente{
-	all s:SistemaCliente, p:Paciente | s in p.sistemaPaciente
-}
-
-fact fatosSistemaServidor{
-    #Servidor = 1
-	all s1:Servidor | #s1.gerentes = 2
-	all g1:Servidor.gerentes, g2: Servidor.gerentes - g1 | g1 != g2
-	loginsDevemSerDiferentes
-	emailsDevemSerDiferentes
-	pacientesEMedicosDevemEstarNoServidor
-	medicoPodeTerPacientes
- 	pacientePodeTerMedicos
-}
-
-fact fatosDosCadastrados{
+pred cadastradosPossuemTodosOsDados[]{
 	all p: Paciente | p.statusCliente = Cadastrado => #p.loginPaciente = 1
 	all p: Paciente | p.statusCliente = Cadastrado => #p.senhaPaciente = 1
 	all p: Paciente | p.statusCliente = Cadastrado => #p.emailPaciente = 1
@@ -207,7 +180,7 @@ fact fatosDosCadastrados{
 	all p:Medico| p.statusMedico = Cadastrado => #p.nomeMedico= 1
 }
 
-fact fatosDosNaoCadastrados{
+pred naoCadastradosNaoPossuemTodosOsDados[]{
 	all p: Paciente | p.statusCliente = NaoCadastrado => #p.loginPaciente = 0
 	all p: Paciente | p.statusCliente = NaoCadastrado => #p.senhaPaciente = 0
 	all p: Paciente | p.statusCliente = NaoCadastrado => #p.emailPaciente = 0
@@ -222,6 +195,46 @@ fact fatosDosNaoCadastrados{
 	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
 }
 
+pred acionaSuporte[t, t' : Time, su: Suporte, se: Servidor ]{
+	no se.suporte.t
+	se.suporte.t' = su
+}
+
+pred removeSuporte[t, t' : Time, su: Suporte, se: Servidor ]{
+	se.suporte.t = su
+	no se.suporte.t'
+}
+
+pred cadastrarMedico[]{}
+
+pred cadastrarSintoma[]{}
+
+pred init[t: Time]{
+	no Servidor.suporte.t
+}
+
+pred show[]{}
+
+/**FATOS*/
+
+fact EspecificacaoDoSistema{
+	cadaMedicoTemDe1a3Pacientes
+	todoSistemaClienteEstaEmPaciente
+	oSistemaTem2GerentesDiferentes
+	loginsDevemSerDiferentes
+	emailsDevemSerDiferentes
+	pacientesEMedicosDevemEstarNoServidor
+	medicoPodeTerPacientes
+ 	pacientePodeTerMedicos
+	cadastradosPossuemTodosOsDados
+	naoCadastradosNaoPossuemTodosOsDados
+// fatos do nome, senha, login, email, statusCadastrado, data, sintomas
+	qualquerDadoPertenceAalguem
+	suporteDeveEstarNoServidor
+	oStatusDaInternetDeveEstarDentroDoSistemaCliente
+	
+}
+
 fact fatosNome{
 	all n:Nome | n in todosOsNomes[Paciente, Medico]
 }
@@ -230,10 +243,11 @@ fact fatosSuporte{
 	all su:Suporte, t: Time | su in Servidor.suporte.t
 }
 
+/*
 fact fatosStatusSuporte{
 	all su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
 }
-
+*/
 
 fact fatosStatusInternet{
 	all s: SistemaCliente, st: StatusInternet | st in s.internet
@@ -262,12 +276,12 @@ fact fatosEmail{
 fact fatosSintomas{
 	all si:Sintoma | si in Paciente.sintomas
 }
-/*
+
 fact traces {
 	init [first]
 	all pre: Time - last | let pos = pre.next |
-	some su: Suporte  |
-	acionaSuporte[pre, pos, su]
+	some su: Suporte, se: Servidor  |
+	acionaSuporte[pre, pos, su, se]
 }
-*/
+
 run show for 5
