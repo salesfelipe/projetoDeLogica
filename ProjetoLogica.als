@@ -25,7 +25,8 @@ module AssistenciaHospitalar
 -- O gerente vai ser um medico, e sao imutaveis
 -- Cada médico pode ter no maximo 3 pacientes
 -- O estado do sistema so pode mudar pra com acesso, se anteriormente ele estiver sem acesso
-/**ASSINATURAS*/
+
+/****************************ASSINATURAS****************************/
 
 /*
 *Assinatura para simular tempo
@@ -137,7 +138,8 @@ Sintoma que o paciente cadastra no sistema. Exclusivo de pacientes.
 */
 sig Sintoma{}
 
-/**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
+/****************************FUNÇÕES****************************/
+
 /*
  A função retorna o conjunto de pacientes que estão cadastrados no servidor
 */
@@ -157,7 +159,7 @@ fun todosOsNomes[p: Paciente, m: Medico]: set Nome{
 	 p.nomePaciente + m.nomeMedico
 }
 
-/**PREDICADOS*/
+/****************************PREDICADOS****************************/
 
 pred cadaMedicoTemDe1a3Pacientes[]{
 	all m1:Medico | #m1.pacientes < 3
@@ -226,13 +228,31 @@ pred naoCadastradosNaoPossuemTodosOsDados[]{
 	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
 }
 
+pred qualquerDadoPertenceAalguem[]{
+	all n:Nome | n in todosOsNomes[Paciente, Medico]
+	all e:Email | e in Paciente.emailPaciente + Medico.emailMedico
+	all l:Login | l in Paciente.loginPaciente + Medico.loginMedico
+	all s:Senha | s in Paciente.senhaPaciente + Medico.senhaMedico
+	all d:DataDeNascimento | d in Paciente.data
+	all si:Sintoma | si in Paciente.sintomas
+	all p: Paciente, m : Medico, st: StatusCadastro | st in p.statusCliente or st in m.statusMedico
+}
+
+pred suporteDeveEstarNoServidorESerImutavel []{
+	all t, t2: Time | Servidor.suporte.t = Servidor.suporte.t2
+	//some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
+}
+
+pred oStatusDaInternetDeveEstarDentroDoSistemaCliente[]{
+	all s: SistemaCliente, st: StatusInternet | st in s.internet
+}
 pred acionaSuporte[t, t' : Time, su: Suporte ]{
 	su.statusDoSuporte.t in SuporteNaoAcionado
 	su.statusDoSuporte.t' = SuporteAcionado
 }
 
 pred cadastrarMedico[t, t' : Time, su: Suporte ]{
-
+}
 pred cadastrarSintoma[]{}
 
 pred init[t: Time]{
@@ -241,66 +261,36 @@ pred init[t: Time]{
 	#Suporte = 2
 }
 
-/**FATOS*/
+/****************************FATOS****************************/
 
 fact EspecificacaoDoSistema{
+
 	cadaMedicoTemDe1a3Pacientes
+
 	todoSistemaClienteEstaEmPaciente
+
 	oSistemaTem2GerentesDiferentes
+
 	loginsDevemSerDiferentes
+
 	emailsDevemSerDiferentes
+
 	pacientesEMedicosDevemEstarNoServidor
+
 	medicoPodeTerPacientes
+
  	pacientePodeTerMedicos
+
 	cadastradosPossuemTodosOsDados
+
 	naoCadastradosNaoPossuemTodosOsDados
-// fatos do nome, senha, login, email, statusCadastrado, data, sintomas
+
 	qualquerDadoPertenceAalguem
-	suporteDeveEstarNoServidor
+
+	suporteDeveEstarNoServidorESerImutavel
+
 	oStatusDaInternetDeveEstarDentroDoSistemaCliente
-	
-}
 
-fact fatosNome{
-	all n:Nome | n in todosOsNomes[Paciente, Medico]
-}
-
-fact fatosSuporteDoSistemaImutavel{
-	all t, t2: Time | Servidor.suporte.t = Servidor.suporte.t2
-}
-
-
-fact fatosStatusSuporte{
-	//some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
-}
-
-
-fact fatosStatusInternet{
-	all s: SistemaCliente, st: StatusInternet | st in s.internet
-}
-
-fact fatosStatusCadastro{
-	all p: Paciente, m : Medico, st: StatusCadastro | st in p.statusCliente or st in m.statusMedico
-}
-
-fact fatosSenha{
-	all s:Senha | s in Paciente.senhaPaciente + Medico.senhaMedico
-}
-
-fact fatosLogin{
-	all l:Login | l in Paciente.loginPaciente + Medico.loginMedico
-}
-
-fact fatosDataDeNascimento{
-	all d:DataDeNascimento | d in Paciente.data
-}
-
-fact fatosEmail{
-	all e:Email | e in Paciente.emailPaciente + Medico.emailMedico
-}
-
-fact fatosSintomas{
-	all si:Sintoma | si in Paciente.sintomas
 }
 
 fact traces {
@@ -310,7 +300,7 @@ fact traces {
 	acionaSuporte[pre, pos, su]
 }
 
-/**ASSERT*/
+/****************************ASSERTS****************************/
 
 /*
 Todo medico atende de 1 a 3 pacientes apenas?
