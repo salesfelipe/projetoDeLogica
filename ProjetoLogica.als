@@ -42,7 +42,7 @@ one sig Servidor{
 	medicos:  some Medico,
 	pacientes: set Paciente,
 	plataformaServidor: one Linux,
-	suporte:  Suporte one -> Time
+	suporte:  Suporte lone -> Time
 }
 
 /*
@@ -82,48 +82,77 @@ sig SistemaCliente{
 	plataforma: one SistemaOperacional
 }
 
-sig Suporte{
-	statusDoSuporte: StatusAcionado one  -> Time
-}
+/*
+O suporte é acionado exclusivamente pelos gerentes caso haja algum erro no sistema.
+*/
+sig Suporte{}
 
+/*
 abstract sig StatusAcionado{}
 
 sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
+*/
 
+
+/*
+Status do cadastro dos pacientes e dos médicos, que podem estar ou não cadastrados no servidor.
+*/
 abstract sig StatusCadastro{}
 
-sig Cadastrado, NaoCadastrado extends StatusCadastro{}
 
+sig Cadastrado, NaoCadastrado extends StatusCadastro{}
+/*
+Refere-se ao status da conexão do paciente, que deve estar conectado à Internet para ter acesso ao sistema.
+*/
 abstract sig StatusInternet{}
 
 sig ComInternet, SemInternet extends StatusInternet{}
-
+/*
+Refere-se ao Sistema Operacional do Servidor. Para este caso, é necessário que o Servidor seja Linux.
+*/
 abstract sig SistemaOperacional{}
 
 one	sig Linux extends SistemaOperacional{}
-
+/*
+Senha necessária a médicos e pacientes para ter acesso ao sistema
+*/
 sig Senha{}
-
+/*
+Login dos médicos e pacientes para logar no sistema
+*/
 sig Login{}
-
+/*
+e-mail que é necessário para o cadastro de do pacientes
+*/
 sig Nome{}	
 
 sig Email{}
-
+/*
+Data de nascimento que é requirida no momento do cadastro do paciente
+*/
 sig DataDeNascimento{}
 
+/*
+Sintoma que o paciente cadastra no sistema. Exclusivo de pacientes.
+*/
 sig Sintoma{}
 
 /**FUNÇÕES UTILITÁRIAS USADAS EM VÁRIAS SEÇÕES DO CÓDIGO*/
-
+/*
+ A função retorna o conjunto de pacientes que estão cadastrados no servidor
+*/
 fun pacientesNoServidor[s: Servidor]: set Paciente{
 	s.pacientes
 }
-
+/*
+A função retorna os médicos que estão cadastrados no servidor
+*/
 fun medicosNoServidor[s: Servidor]: set Medico{
 	s.medicos
 }
-
+/*
+A função retorna os nomes de médicos e pacientes cadastrados no servidor
+*/
 fun todosOsNomes[p: Paciente, m: Medico]: set Nome{
 	 p.nomePaciente + m.nomeMedico
 }
