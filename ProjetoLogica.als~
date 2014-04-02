@@ -4,6 +4,8 @@
 
 open util/ordering [Time]
 
+
+
 module AssistenciaHospitalar
 
 /** Sistema de Monitoramento de Pacientes (Cliente - Kaio)
@@ -199,9 +201,9 @@ pred naoCadastradosNaoPossuemTodosOsDados[]{
 	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
 }
 
-pred acionaSuporte[t, t' : Time, su: Suporte ]{
-	su.statusDoSuporte.t in SuporteNaoAcionado
-	su.statusDoSuporte.t' = SuporteAcionado
+pred acionaSuporte[t, t' : Time]{
+	suporte.statusDoSuporte.t in SuporteNaoAcionado
+	suporte.statusDoSuporte.t' = SuporteAcionado
 }
 
 pred removeSuporte[t, t' : Time, su: Suporte, se: Servidor ]{
@@ -213,7 +215,9 @@ pred cadastrarMedico[]{}
 
 pred cadastrarSintoma[]{}
 
-pred init[t: Time]{}
+pred init[t: Time]{
+	no Servidor.suporte.t
+}
 
 pred show[]{}
 
@@ -242,13 +246,14 @@ fact fatosNome{
 }
 
 fact fatosSuporte{
-//	all su:Suporte, t: Time | su in Servidor.suporte.t
+	//all su:Suporte, t: Time | su in Servidor.suporte.t
 }
 
-
+/*
 fact fatosStatusSuporte{
-	some su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
+	all su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
 }
+*/
 
 fact fatosStatusInternet{
 	all s: SistemaCliente, st: StatusInternet | st in s.internet
@@ -281,9 +286,8 @@ fact fatosSintomas{
 fact traces {
 	init [first]
 	all pre: Time - last | let pos = pre.next |
-	some su: Suporte  |
-	acionaSuporte[pre, pos, su]
+	
+	acionaSuporte[pre, pos]
 }
 
-
-run show for 10
+run show for 5
