@@ -42,7 +42,7 @@ one sig Servidor{
 	medicos:  some Medico,
 	pacientes: set Paciente,
 	plataformaServidor: one Linux,
-	suporte:  Suporte lone -> Time
+	suporte:  Suporte one -> Time
 }
 
 /*
@@ -82,7 +82,9 @@ sig SistemaCliente{
 	plataforma: one SistemaOperacional
 }
 
-sig Suporte{}
+sig Suporte{
+	statusDoSuporte: StatusAcionado one  -> Time
+}
 
 abstract sig StatusAcionado{}
 
@@ -195,9 +197,9 @@ pred naoCadastradosNaoPossuemTodosOsDados[]{
 	all p:Medico| p.statusMedico = NaoCadastrado => #p.nomeMedico= 0
 }
 
-pred acionaSuporte[t, t' : Time, su: Suporte, se: Servidor ]{
-	no se.suporte.t
-	se.suporte.t' = su
+pred acionaSuporte[t, t' : Time, su: Suporte ]{
+	su.statusDoSuporte.t in SuporteNaoAcionado
+	su.statusDoSuporte.t' = SuporteAcionado
 }
 
 pred cadastrarMedico[t, t' : Time, su: Suporte ]{
@@ -275,8 +277,8 @@ fact fatosSintomas{
 fact traces {
 	init [first]
 	all pre: Time - last | let pos = pre.next |
-	some su: Suporte, se: Servidor  |
-	acionaSuporte[pre, pos, su, se]
+	some su: Suporte  |
+	acionaSuporte[pre, pos, su]
 }
 
 /**ASSERT*/
