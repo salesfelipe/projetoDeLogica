@@ -83,11 +83,11 @@ sig SistemaCliente{
 }
 
 sig Suporte{}
-/*
+
 abstract sig StatusAcionado{}
 
 sig SuporteAcionado, SuporteNaoAcionado extends StatusAcionado{}
-*/
+
 abstract sig StatusCadastro{}
 
 sig Cadastrado, NaoCadastrado extends StatusCadastro{}
@@ -213,8 +213,6 @@ pred init[t: Time]{
 	no Servidor.suporte.t
 }
 
-pred show[]{}
-
 /**FATOS*/
 
 fact EspecificacaoDoSistema{
@@ -243,11 +241,11 @@ fact fatosSuporte{
 	all su:Suporte, t: Time | su in Servidor.suporte.t
 }
 
-/*
+
 fact fatosStatusSuporte{
 	all su: Suporte,  st: StatusAcionado, t: Time | st in su.(statusDoSuporte.t)
 }
-*/
+
 
 fact fatosStatusInternet{
 	all s: SistemaCliente, st: StatusInternet | st in s.internet
@@ -284,4 +282,93 @@ fact traces {
 	acionaSuporte[pre, pos, su, se]
 }
 
+/**ASSERT*/
+
+/*
+Todo medico atende de 1 a 3 pacientes apenas?
+*/
+assert medicosAtendemDe1a3pacientes{
+	all m: Medico | #m.pacientes >= 1 and #m.pacientes <=3
+}
+
+/*
+O sistema possui apenas 2 gerentes realmente?
+*/
+assert servidorPossuiApenas2Gerentes{
+	all s: Servidor | #s.gerentes = 2
+}
+
+/*
+Todo paciente cadastrado contém todos os seus dados de cadastro e não os contém caso contrário?
+*/
+assert pacienteCadastradoContemTodosOsDados{
+	all p: Paciente |
+	p.statusCliente = Cadastrado
+	implies
+		#p.nomePaciente != 0 and
+		#p.loginPaciente != 0 and
+		#p.emailPaciente != 0 and
+		#p.data != 0 and
+		#p.senhaPaciente != 0 and
+		#p.sistemaPaciente != 0 and
+	
+	all p: Paciente |
+	p.statusCliente = NaoCadastrado
+	implies
+		#p.nomePaciente = 0 and
+		#p.loginPaciente = 0 and
+		#p.emailPaciente = 0 and
+		#p.data = 0 and
+		#p.senhaPaciente = 0 and
+		#p.sistemaPaciente = 0 and
+		#p.sintomas = 0
+}
+
+/*
+Todo médico cadastrado contém todos os seus dados de cadastro e não os contém caso contrário?
+*/
+assert medicoCadastradoContemTodosOsDados{
+	all m: Medico | m.statusMedico = Cadastrado
+		implies
+			#m.nomeMedico != 0 and
+			#m.loginMedico != 0 and
+			#m.emailMedico != 0 and
+			#m.senhaMedico != 0
+	
+	all m: Medico | m.statusMedico = NaoCadastrado
+		implies
+			#m.nomeMedico = 0 and
+			#m.loginMedico = 0 and
+			#m.emailMedico = 0 and
+			#m.senhaMedico = 0
+}
+
+/*
+Todo dado possui um dono?
+*/
+assert todosOsDadosPossuemDono{
+	all n: Nome, s: Senha, l: Login, d: DataDeNascimento, e: Email, p: Paciente, m: Medico | 
+		(n in p.nomePaciente) or (n in m.nomeMedico) and
+		(s in p.senhaPaciente) or (s in m.senhaMedico) and
+		(l in p.loginPaciente) or (l in m.loginMedico) and
+		(d in p.data) and
+		(e in p.emailPaciente) or (e in m.emailMedico)
+} 
+
+/*
+O sistema possui apenas um suporte?
+*/
+assert servidorPossuiApenas1Suporte{
+	all s: Servidor | #s.suporte = 1
+}
+
+/*
+A plataforma utilizada pelo sistema é Linux?
+*/
+assert plataformaDoServidorDeveSerLinux{
+	all s: Servidor | s.plataformaServidor = Linux
+}
+/**RUN */
+
+pred show[]{}
 run show for 5
